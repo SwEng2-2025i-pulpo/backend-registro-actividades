@@ -9,6 +9,6 @@ app = FastAPI() # Inicializamos FastAPI
 app.include_router(caretakers.router) # Inicializamos la api desde router.
 app.include_router(patients.router)
 
-@app.get("/") # Métodos que tiene FastAPI
-async def root():
-    return "Prueba de FastAPI"
+
+
+#uvicorn main:app --reload 
