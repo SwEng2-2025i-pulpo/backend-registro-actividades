@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from routers import caretakers, patients
+from app.routers import caretakers, patients
 
 
 app = FastAPI() # Inicializamos FastAPI
@@ -12,3 +12,4 @@ app.include_router(patients.router)
 
 
 #uvicorn main:app --reload 
+# uvicorn app.main:app --reload

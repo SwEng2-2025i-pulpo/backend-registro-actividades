@@ -1,0 +1,350 @@
+from fastapi import APIRouter, HTTPException, Body
+from app.db.client import db_client
+from bson import ObjectId
+from datetime import datetime
+from bson import ObjectId, errors as bson_errors
+from app.db.schemas.activity import medication_logs_schema, meals_schema, hygiene_logs_schema, vital_signs_schema, symptoms_schema, medical_history_schema
+from app.db.models.activity import MedicationLog, Meal, HygieneLog, VitalSigns, Symptom, MedicalHistoryEntry
+
+router = APIRouter(prefix="/patients", tags=["patients"])
+
+# Definir la colección de pacientes
+patients_collection = db_client["conectacare"]["patient"]
+
+@router.get("/", summary="Obtener lista de pacientes", response_description="Lista de pacientes")
+def get_patients():
+    """
+    Obtiene la lista completa de pacientes registrados en la base de datos.
+
+    Retorna:
+    - Lista de pacientes, cada uno con su ID, nombre y edad.
+    """
+    patients = list(patients_collection.find())
+    return [
+        {
+            "id": str(patient["_id"]),
+            "name": patient.get("full_name", "Sin nombre"),
+            "age": patient.get("age", "Sin edad")
+        }
+        for patient in patients
+    ]
+
+
+@router.post("/{patient_id}/medication_logs", summary="Registrar medicación para un paciente", response_description="Medicación registrada")
+def add_medication_log(patient_id: str, medication_log: dict = Body(...)):
+    """
+    Registra un nuevo evento de administración de medicación para el paciente especificado.
+
+    Parámetros:
+    - patient_id: ID del paciente.
+    - medication_log (en el body): JSON con los siguientes campos:
+        - datetime (ISO 8601 string).
+        - medication_name (str).
+        - dose (str).
+        - route (str).
+        - status (str).
+        - observations (opcional, str).
+
+    Retorna:
+    - Mensaje de éxito o error.
+    """
+    try:
+        object_id = ObjectId(patient_id)
+    except bson_errors.InvalidId:
+        raise HTTPException(status_code=400, detail="Formato de patient_id inválido")
+
+    patient = patients_collection.find_one({"_id": object_id})
+
+    if not patient:
+        raise HTTPException(status_code=404, detail="Paciente no encontrado")
+
+    # Convertir datetime (str) a datetime.datetime
+    try:
+        medication_log["datetime"] = datetime.fromisoformat(
+            medication_log["datetime"].replace("Z", "+00:00")
+        )
+    except Exception:
+        raise HTTPException(status_code=400, detail="Formato de datetime inválido. Debe ser ISO 8601.")
+
+    result = patients_collection.update_one(
+        {"_id": object_id},
+        {"$push": {"medication_logs": medication_log}}
+    )
+
+    if result.modified_count == 1:
+        return {"message": "Registro de medicación agregado exitosamente"}
+
+    raise HTTPException(status_code=500, detail="No se pudo agregar el registro")
+
+
+@router.get("/{patient_id}/medication_logs", summary="Obtener registros de medicación de un paciente", response_description="Lista de registros de medicación")
+def get_medication_logs(patient_id: str):
+    """
+    Obtiene todos los registros de medicación del paciente especificado.
+
+    Parámetros:
+    - patient_id: ID del paciente.
+
+    Retorna:
+    - Lista de registros de medicación.
+    """
+    try:
+        object_id = ObjectId(patient_id)
+    except bson_errors.InvalidId:
+        raise HTTPException(status_code=400, detail="Formato de patient_id inválido")
+
+    patient = patients_collection.find_one({"_id": object_id})
+
+    if not patient:
+        raise HTTPException(status_code=404, detail="Paciente no encontrado")
+
+    medication_logs = patient.get("medication_logs", [])
+
+    return medication_logs_schema(medication_logs)
+
+
+@router.post("/{patient_id}/meals", summary="Registrar comida para un paciente", response_description="Comida registrada")
+def add_meal(patient_id: str, meal: Meal):
+    try:
+        object_id = ObjectId(patient_id)
+    except bson_errors.InvalidId:
+        raise HTTPException(status_code=400, detail="Formato de patient_id inválido")
+
+    patient = patients_collection.find_one({"_id": object_id})
+    if not patient:
+        raise HTTPException(status_code=404, detail="Paciente no encontrado")
+
+    meal_dict = meal.dict()
+
+    result = patients_collection.update_one(
+        {"_id": object_id},
+        {"$push": {"meals": meal_dict}}
+    )
+
+    if result.modified_count == 1:
+        return {"message": "Registro de comida agregado exitosamente"}
+
+    raise HTTPException(status_code=500, detail="No se pudo agregar el registro")
+
+
+@router.get("/{patient_id}/meals", summary="Obtener registros de comidas de un paciente", response_description="Lista de registros de comidas")
+def get_meals(patient_id: str):
+    """
+    Obtiene todos los registros de comidas del paciente especificado.
+
+    Parámetros:
+    - patient_id: ID del paciente.
+
+    Retorna:
+    - Lista de registros de comidas.
+    """
+    try:
+        object_id = ObjectId(patient_id)
+    except bson_errors.InvalidId:
+        raise HTTPException(status_code=400, detail="Formato de patient_id inválido")
+
+    patient = patients_collection.find_one({"_id": object_id})
+    if not patient:
+        raise HTTPException(status_code=404, detail="Paciente no encontrado")
+
+    meals = patient.get("meals", [])
+
+    return meals_schema(meals)
+
+
+@router.post("/{patient_id}/hygiene_logs", summary="Registrar evento de higiene para un paciente", response_description="Evento de higiene registrado")
+def add_hygiene_log(patient_id: str, hygiene_log: HygieneLog):
+    try:
+        object_id = ObjectId(patient_id)
+    except bson_errors.InvalidId:
+        raise HTTPException(status_code=400, detail="Formato de patient_id inválido")
+
+    patient = patients_collection.find_one({"_id": object_id})
+    if not patient:
+        raise HTTPException(status_code=404, detail="Paciente no encontrado")
+
+    hygiene_log_dict = hygiene_log.dict()
+
+    result = patients_collection.update_one(
+        {"_id": object_id},
+        {"$push": {"hygiene_logs": hygiene_log_dict}}
+    )
+
+    if result.modified_count == 1:
+        return {"message": "Registro de evento de higiene agregado exitosamente"}
+
+    raise HTTPException(status_code=500, detail="No se pudo agregar el registro")
+
+
+@router.get("/{patient_id}/hygiene_logs", summary="Obtener registros de higiene de un paciente", response_description="Lista de registros de higiene")
+def get_hygiene_logs(patient_id: str):
+    """
+    Obtiene todos los registros de eventos de higiene del paciente especificado.
+
+    Parámetros:
+    - patient_id: ID del paciente.
+
+    Retorna:
+    - Lista de registros de higiene.
+    """
+    try:
+        object_id = ObjectId(patient_id)
+    except bson_errors.InvalidId:
+        raise HTTPException(status_code=400, detail="Formato de patient_id inválido")
+
+    patient = patients_collection.find_one({"_id": object_id})
+    if not patient:
+        raise HTTPException(status_code=404, detail="Paciente no encontrado")
+
+    hygiene_logs = patient.get("hygiene_logs", [])
+
+    return hygiene_logs_schema(hygiene_logs)
+
+
+@router.post("/{patient_id}/vital_signs", summary="Registrar signos vitales para un paciente", response_description="Signos vitales registrados")
+def add_vital_signs(patient_id: str, vital_signs: VitalSigns):
+    try:
+        object_id = ObjectId(patient_id)
+    except bson_errors.InvalidId:
+        raise HTTPException(status_code=400, detail="Formato de patient_id inválido")
+
+    patient = patients_collection.find_one({"_id": object_id})
+    if not patient:
+        raise HTTPException(status_code=404, detail="Paciente no encontrado")
+
+    vital_signs_dict = vital_signs.dict()
+
+    result = patients_collection.update_one(
+        {"_id": object_id},
+        {"$push": {"vital_signs": vital_signs_dict}}
+    )
+
+    if result.modified_count == 1:
+        return {"message": "Registro de signos vitales agregado exitosamente"}
+
+    raise HTTPException(status_code=500, detail="No se pudo agregar el registro")
+
+
+@router.get("/{patient_id}/vital_signs", summary="Obtener registros de signos vitales de un paciente", response_description="Lista de registros de signos vitales")
+def get_vital_signs(patient_id: str):
+    """
+    Obtiene todos los registros de signos vitales del paciente especificado.
+
+    Parámetros:
+    - patient_id: ID del paciente.
+
+    Retorna:
+    - Lista de registros de signos vitales.
+    """
+    try:
+        object_id = ObjectId(patient_id)
+    except bson_errors.InvalidId:
+        raise HTTPException(status_code=400, detail="Formato de patient_id inválido")
+
+    patient = patients_collection.find_one({"_id": object_id})
+    if not patient:
+        raise HTTPException(status_code=404, detail="Paciente no encontrado")
+
+    vital_signs = patient.get("vital_signs", [])
+
+    return vital_signs_schema(vital_signs)
+
+
+@router.post("/{patient_id}/symptoms", summary="Registrar síntoma para un paciente", response_description="Síntoma registrado")
+def add_symptom(patient_id: str, symptom: Symptom):
+    try:
+        object_id = ObjectId(patient_id)
+    except bson_errors.InvalidId:
+        raise HTTPException(status_code=400, detail="Formato de patient_id inválido")
+
+    patient = patients_collection.find_one({"_id": object_id})
+    if not patient:
+        raise HTTPException(status_code=404, detail="Paciente no encontrado")
+
+    symptom_dict = symptom.dict()
+
+    result = patients_collection.update_one(
+        {"_id": object_id},
+        {"$push": {"symptoms": symptom_dict}}
+    )
+
+    if result.modified_count == 1:
+        return {"message": "Registro de síntoma agregado exitosamente"}
+
+    raise HTTPException(status_code=500, detail="No se pudo agregar el registro")
+
+
+@router.get("/{patient_id}/symptoms", summary="Obtener registros de síntomas de un paciente", response_description="Lista de registros de síntomas")
+def get_symptoms(patient_id: str):
+    """
+    Obtiene todos los registros de síntomas del paciente especificado.
+
+    Parámetros:
+    - patient_id: ID del paciente.
+
+    Retorna:
+    - Lista de registros de síntomas.
+    """
+    try:
+        object_id = ObjectId(patient_id)
+    except bson_errors.InvalidId:
+        raise HTTPException(status_code=400, detail="Formato de patient_id inválido")
+
+    patient = patients_collection.find_one({"_id": object_id})
+    if not patient:
+        raise HTTPException(status_code=404, detail="Paciente no encontrado")
+
+    symptoms = patient.get("symptoms", [])
+
+    return symptoms_schema(symptoms)
+
+
+@router.post("/{patient_id}/medical_history", summary="Registrar entrada en historial médico de un paciente", response_description="Entrada en historial médico registrada")
+def add_medical_history_entry(patient_id: str, entry: MedicalHistoryEntry):
+    try:
+        object_id = ObjectId(patient_id)
+    except bson_errors.InvalidId:
+        raise HTTPException(status_code=400, detail="Formato de patient_id inválido")
+
+    patient = patients_collection.find_one({"_id": object_id})
+    if not patient:
+        raise HTTPException(status_code=404, detail="Paciente no encontrado")
+
+    entry_dict = entry.dict()
+
+    result = patients_collection.update_one(
+        {"_id": object_id},
+        {"$push": {"medical_history": entry_dict}}
+    )
+
+    if result.modified_count == 1:
+        return {"message": "Registro en historial médico agregado exitosamente"}
+
+    raise HTTPException(status_code=500, detail="No se pudo agregar el registro")
+
+
+@router.get("/{patient_id}/medical_history", summary="Obtener historial médico de un paciente", response_description="Historial médico")
+def get_medical_history(patient_id: str):
+    """
+    Obtiene todas las entradas del historial médico del paciente especificado.
+
+    Parámetros:
+    - patient_id: ID del paciente.
+
+    Retorna:
+    - Lista de entradas del historial médico.
+    """
+    try:
+        object_id = ObjectId(patient_id)
+    except bson_errors.InvalidId:
+        raise HTTPException(status_code=400, detail="Formato de patient_id inválido")
+
+    patient = patients_collection.find_one({"_id": object_id})
+    if not patient:
+        raise HTTPException(status_code=404, detail="Paciente no encontrado")
+
+    medical_history = patient.get("medical_history", [])
+
+    return medical_history_schema(medical_history)
+
+

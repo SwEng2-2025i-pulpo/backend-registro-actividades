@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
-from db.models.caretaker import Caretaker
-from db.client import db_client
-from db.schemas.caretaker import caretaker_schema, caretakers_schema
+from app.db.models.caretaker import Caretaker
+from app.db.client import db_client
+from app.db.schemas.caretaker import caretaker_schema, caretakers_schema
 from bson import ObjectId
 
 # en este archivo deben ir los métodos para trabajar con la base de datos (get, post, put, delete)
