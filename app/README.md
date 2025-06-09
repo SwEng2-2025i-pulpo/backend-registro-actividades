@@ -107,7 +107,7 @@ Todos los modelos de datos son validados usando **Pydantic**.
 Ejecutar el backend:
 
 ```bash
-uvicorn main:app --reload
+uvicorn app.main:app --reload
 ```
 
 Acceder a la documentación interactiva en:
