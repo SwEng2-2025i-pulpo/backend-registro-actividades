@@ -4,12 +4,48 @@ from bson import ObjectId
 from datetime import datetime
 from bson import ObjectId, errors as bson_errors
 from app.db.schemas.activity import medication_logs_schema, meals_schema, hygiene_logs_schema, vital_signs_schema, symptoms_schema, medical_history_schema
+from app.db.schemas.patient import patient_schema
 from app.db.models.activity import MedicationLog, Meal, HygieneLog, VitalSigns, Symptom, MedicalHistoryEntry
 
 router = APIRouter(prefix="/patients", tags=["patients"])
 
 # Definir la colección de pacientes
 patients_collection = db_client["conectacare"]["patient"]
+
+
+@router.post("/", summary="Crear un nuevo paciente", response_description="Paciente creado")
+def create_patient(patient_data: dict = Body(...)):
+    """
+    Crea un nuevo paciente en la base de datos.
+
+    Parámetros:
+    - patient_data (en el body): JSON con los campos del paciente.
+
+    Retorna:
+    - El paciente creado con su ID asignado.
+    """
+    try:
+        # Convertir birth_date a datetime
+        if "birth_date" in patient_data:
+            patient_data["birth_date"] = datetime.fromisoformat(
+                patient_data["birth_date"].replace("Z", "+00:00")
+            )
+        
+        # Convertir caretaker_id a ObjectId
+        if "caretaker_id" in patient_data:
+            patient_data["caretaker_id"] = ObjectId(patient_data["caretaker_id"])
+
+        # Insertar paciente en la colección
+        result = patients_collection.insert_one(patient_data)
+
+        # Recuperar el paciente insertado
+        new_patient = patients_collection.find_one({"_id": result.inserted_id})
+
+        return patient_schema(new_patient)
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al crear el paciente: {str(e)}")
+
 
 @router.get("/", summary="Obtener lista de pacientes", response_description="Lista de pacientes")
 def get_patients():
