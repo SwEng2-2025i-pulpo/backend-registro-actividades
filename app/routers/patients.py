@@ -100,7 +100,7 @@ def get_medication_logs(patient_id: str):
 
     medication_logs = patient.get("medication_logs", [])
 
-    return medication_logs_schema(medication_logs)
+    return {"medication_logs": medication_logs_schema(medication_logs)}
 
 
 @router.put("/{patient_id}/medication_logs", summary="Actualizar un registro de medicación de un paciente", response_description="Registro de medicación actualizado")
@@ -183,7 +183,7 @@ def get_meals(patient_id: str):
 
     meals = patient.get("meals", [])
 
-    return meals_schema(meals)
+    return {"meals": meals_schema(meals)}
 
 
 @router.put("/{patient_id}/meals", summary="Actualizar un registro de comida de un paciente", response_description="Registro de comida actualizado")
@@ -266,7 +266,7 @@ def get_hygiene_logs(patient_id: str):
 
     hygiene_logs = patient.get("hygiene_logs", [])
 
-    return hygiene_logs_schema(hygiene_logs)
+    return {"hygiene_logs": hygiene_logs_schema(hygiene_logs)}
 
 
 @router.put("/{patient_id}/hygiene_logs", summary="Actualizar un registro de higiene de un paciente", response_description="Registro de higiene actualizado")
@@ -349,7 +349,7 @@ def get_vital_signs(patient_id: str):
 
     vital_signs = patient.get("vital_signs", [])
 
-    return vital_signs_schema(vital_signs)
+    return {"vital_signs": vital_signs_schema(vital_signs)}
 
 
 @router.put("/{patient_id}/vital_signs", summary="Actualizar un registro de signos vitales de un paciente", response_description="Registro de signos vitales actualizado")
@@ -432,7 +432,7 @@ def get_symptoms(patient_id: str):
 
     symptoms = patient.get("symptoms", [])
 
-    return symptoms_schema(symptoms)
+    return {"symptoms": symptoms_schema(symptoms)}
 
 
 @router.put("/{patient_id}/symptoms", summary="Actualizar un registro de síntomas de un paciente", response_description="Registro de síntoma actualizado")
@@ -515,7 +515,7 @@ def get_medical_history(patient_id: str):
 
     medical_history = patient.get("medical_history", [])
 
-    return medical_history_schema(medical_history)
+    return {"medical_history": medical_history_schema(medical_history)}
 
 
 @router.put("/{patient_id}/medical_history", summary="Actualizar un registro del historial médico de un paciente", response_description="Registro del historial médico actualizado")
