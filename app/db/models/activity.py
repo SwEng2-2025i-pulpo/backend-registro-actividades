@@ -45,3 +45,8 @@ class MedicalHistoryEntry(BaseModel):
     date: datetime
     description: str
     notes: Optional[str] = ""
+
+
+class WeightEntry(BaseModel):
+    month: str # formato YYYY-MM
+    value: int # en kg
