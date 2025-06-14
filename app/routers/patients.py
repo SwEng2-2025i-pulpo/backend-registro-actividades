@@ -6,6 +6,7 @@ from bson import ObjectId, errors as bson_errors
 from app.db.schemas.activity import medication_logs_schema, meals_schema, hygiene_logs_schema, vital_signs_schema, symptoms_schema, medical_history_schema
 from app.db.schemas.patient import patient_schema
 from app.db.models.activity import MedicationLog, Meal, HygieneLog, VitalSigns, Symptom, MedicalHistoryEntry
+from app.db.models.patient import Patient
 
 router = APIRouter(prefix="/patients", tags=["patients"])
 
@@ -45,6 +46,20 @@ def create_patient(patient_data: dict = Body(...)):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al crear el paciente: {str(e)}")
+
+@router.get("/{patient_id}", summary="Obtener paciente por id", response_description="Paciente por id")
+def get_patientid(patient_id: str):
+    return search_patientsid("_id", ObjectId(patient_id))
+
+    #patientById = patients_collection.find_one({"_id":patientId})
+
+def search_patientsid(field: str, key): # función para obtener un caretaker
+    try:
+        duplicate = patient_schema(db_client.conectacare.patient.find_one({field: key}))
+        return Patient(**duplicate)
+    except:
+        return {"error": "no se ha encontrado el usuario getbyid"}
+
 
 
 @router.get("/", summary="Obtener lista de pacientes", response_description="Lista de pacientes")

@@ -1,13 +1,13 @@
 from pydantic import BaseModel
 # En este archivo se hace la clase base del patient y los atributos que contiene
-from models.activity import WeightEntry, MedicalHistoryEntry, Meal, MedicationLog, HygieneLog, VitalSigns, Symptom
+from app.db.models.activity import WeightEntry, MedicalHistoryEntry, Meal, MedicationLog, HygieneLog, VitalSigns, Symptom
 from typing import List
 from datetime import date
 
 
 class Patient(BaseModel):
 
-    id: str | None # volvemos el id opcional porque mongo lo pone automaticamente lo ponemos str porque mongo trabaja así
+    id: str | None = None # volvemos el id opcional porque mongo lo pone automaticamente lo ponemos str porque mongo trabaja así
     full_name: str
     birth_date: date
     age: int
