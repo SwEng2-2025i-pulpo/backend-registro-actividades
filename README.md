@@ -120,7 +120,7 @@ Instala las dependencias:
 
 Ejecutar el backend:
   ```bash
-  uvicorn app.main:app --reload
+  uvicorn app.main:app --reload --port 8000
   ```
 
 Acceder a la documentación interactiva en:

@@ -13,6 +13,7 @@ app.include_router(patients.router)
 # Configuración de CORS
 origins = [
     "http://localhost:3000",  # React local
+    "http://localhost:5173",
     # Añadir otros orígenes aquí, como el dominio en producción
 ]
 
