@@ -4,15 +4,15 @@ from bson import ObjectId
 from datetime import datetime
 from bson import ObjectId, errors as bson_errors
 from app.db.schemas.activity import * 
-from app.db.schemas.patient import patient_schema
+from app.db.schemas.patient import *
 from app.db.models.activity import MedicationLog, Meal, HygieneLog, VitalSigns, Symptom, MedicalHistoryEntry
 from app.db.models.patient import Patient
 from datetime import datetime, date
 
 router = APIRouter(prefix="/patients", tags=["patients"])
 
-# Definir la colección de pacientes
-patients_collection = db_client["conectacare"]["patient"]
+# # Definir la colección de pacientes
+# patients_collection = db_client["conectacare"]["patient"]
 
 #POST PACIENTE FUNCIONANDO
 @router.post("/", response_model = Patient, summary="Crear un nuevo paciente", response_description="Paciente creado")
@@ -52,6 +52,7 @@ async def get_patientid(patient_id: str): #cambio función ASYNC Daniel 11 JULIO
 
     #patientById = patients_collection.find_one({"_id":patientId})
 
+#GET PATIENT BY ID FUNCIONANDO
 def search_patientsid(field: str, key): # función para obtener un patient
     try:
         searcher = patient_schema(db_client.conectacare.patient.find_one({field: key}))
@@ -59,24 +60,12 @@ def search_patientsid(field: str, key): # función para obtener un patient
     except:
         return {"error": "no se ha encontrado el usuario getbyid"}
 
-
+#GET PATIENTS FUNCIONANDO
 @router.get("/", summary="Obtener lista de pacientes", response_description="Lista de pacientes")
 def get_patients():
-    """
-    Obtiene la lista completa de pacientes registrados en la base de datos.
 
-    Retorna:
-    - Lista de pacientes, cada uno con su ID, nombre y edad.
-    """
-    patients = list(patients_collection.find())
-    return [
-        {
-            "id": str(patient["_id"]),
-            "name": patient.get("full_name", "Sin nombre"),
-            "age": patient.get("age", "Sin edad")
-        }
-        for patient in patients
-    ]
+    patients = patient_schema_starting_list(db_client.conectacare.patient.find())
+    return patients
 
 #POST FUNCIONANDO
 @router.post("/{patient_id}/medication_logs", response_model=MedicationLog, summary="Registrar medicación para un paciente", response_description="Medicación registrada")
@@ -111,24 +100,16 @@ async def add_medication_log(patient_id: str, medication_log: MedicationLog):
 
     raise HTTPException(status_code=400, detail="No se pudo agregar el registro")
 
-
+#FUNCIONANDO
 @router.get("/{patient_id}/medication_logs", summary="Obtener registros de medicación de un paciente", response_description="Lista de registros de medicación")
 def get_medication_logs(patient_id: str):
-    """
-    Obtiene todos los registros de medicación del paciente especificado.
 
-    Parámetros:
-    - patient_id: ID del paciente.
-
-    Retorna:
-    - Lista de registros de medicación.
-    """
     try:
         object_id = ObjectId(patient_id)
     except bson_errors.InvalidId:
         raise HTTPException(status_code=400, detail="Formato de patient_id inválido")
 
-    patient = patients_collection.find_one({"_id": object_id})
+    patient = db_client.conectacare.patient.find_one({"_id": object_id})
 
     if not patient:
         raise HTTPException(status_code=404, detail="Paciente no encontrado")
@@ -197,23 +178,15 @@ async def add_meal(patient_id: str, meal: Meal):
     
     raise HTTPException(status_code=400, detail="No se pudo agregar el registro")
 
+#FUNCIONANDO
 @router.get("/{patient_id}/meals", summary="Obtener registros de comidas de un paciente", response_description="Lista de registros de comidas")
 def get_meals(patient_id: str):
-    """
-    Obtiene todos los registros de comidas del paciente especificado.
-
-    Parámetros:
-    - patient_id: ID del paciente.
-
-    Retorna:
-    - Lista de registros de comidas.
-    """
     try:
         object_id = ObjectId(patient_id)
     except bson_errors.InvalidId:
         raise HTTPException(status_code=400, detail="Formato de patient_id inválido")
 
-    patient = patients_collection.find_one({"_id": object_id})
+    patient = db_client.conectacare.patient.find_one({"_id": object_id})
     if not patient:
         raise HTTPException(status_code=404, detail="Paciente no encontrado")
 
@@ -280,24 +253,15 @@ async def add_hygiene_log(patient_id: str, hygiene_log: HygieneLog):
 
     raise HTTPException(status_code=400, detail="No se pudo agregar el registro")
 
-
+#FUNCIONANDO
 @router.get("/{patient_id}/hygiene_logs", summary="Obtener registros de higiene de un paciente", response_description="Lista de registros de higiene")
 def get_hygiene_logs(patient_id: str):
-    """
-    Obtiene todos los registros de eventos de higiene del paciente especificado.
-
-    Parámetros:
-    - patient_id: ID del paciente.
-
-    Retorna:
-    - Lista de registros de higiene.
-    """
     try:
         object_id = ObjectId(patient_id)
     except bson_errors.InvalidId:
         raise HTTPException(status_code=400, detail="Formato de patient_id inválido")
 
-    patient = patients_collection.find_one({"_id": object_id})
+    patient = db_client.conectacare.patient.find_one({"_id": object_id})
     if not patient:
         raise HTTPException(status_code=404, detail="Paciente no encontrado")
 
@@ -364,24 +328,15 @@ def add_vital_signs(patient_id: str, vital_signs: VitalSigns):
 
     raise HTTPException(status_code=400, detail="No se pudo agregar el registro")
 
-
+#FUNCIONANDO
 @router.get("/{patient_id}/vital_signs", summary="Obtener registros de signos vitales de un paciente", response_description="Lista de registros de signos vitales")
 def get_vital_signs(patient_id: str):
-    """
-    Obtiene todos los registros de signos vitales del paciente especificado.
-
-    Parámetros:
-    - patient_id: ID del paciente.
-
-    Retorna:
-    - Lista de registros de signos vitales.
-    """
     try:
         object_id = ObjectId(patient_id)
     except bson_errors.InvalidId:
         raise HTTPException(status_code=400, detail="Formato de patient_id inválido")
 
-    patient = patients_collection.find_one({"_id": object_id})
+    patient = db_client.conectacare.patient.find_one({"_id": object_id})
     if not patient:
         raise HTTPException(status_code=404, detail="Paciente no encontrado")
 
@@ -449,24 +404,15 @@ def add_symptom(patient_id: str, symptom: Symptom):
 
     raise HTTPException(status_code=400, detail="No se pudo agregar el registro")
 
-
+#FUNCIONANDO
 @router.get("/{patient_id}/symptoms", summary="Obtener registros de síntomas de un paciente", response_description="Lista de registros de síntomas")
 def get_symptoms(patient_id: str):
-    """
-    Obtiene todos los registros de síntomas del paciente especificado.
-
-    Parámetros:
-    - patient_id: ID del paciente.
-
-    Retorna:
-    - Lista de registros de síntomas.
-    """
     try:
         object_id = ObjectId(patient_id)
     except bson_errors.InvalidId:
         raise HTTPException(status_code=400, detail="Formato de patient_id inválido")
 
-    patient = patients_collection.find_one({"_id": object_id})
+    patient = db_client.conectacare.patient.find_one({"_id": object_id})
     if not patient:
         raise HTTPException(status_code=404, detail="Paciente no encontrado")
 
@@ -532,23 +478,15 @@ def add_medical_history_entry(patient_id: str, entry: MedicalHistoryEntry):
 
     raise HTTPException(status_code=400, detail="No se pudo agregar el registro")
 
+#FUNCIONANDO
 @router.get("/{patient_id}/medical_history", summary="Obtener historial médico de un paciente", response_description="Historial médico")
 def get_medical_history(patient_id: str):
-    """
-    Obtiene todas las entradas del historial médico del paciente especificado.
-
-    Parámetros:
-    - patient_id: ID del paciente.
-
-    Retorna:
-    - Lista de entradas del historial médico.
-    """
     try:
         object_id = ObjectId(patient_id)
     except bson_errors.InvalidId:
         raise HTTPException(status_code=400, detail="Formato de patient_id inválido")
 
-    patient = patients_collection.find_one({"_id": object_id})
+    patient = db_client.conectacare.patient.find_one({"_id": object_id})
     if not patient:
         raise HTTPException(status_code=404, detail="Paciente no encontrado")
 
