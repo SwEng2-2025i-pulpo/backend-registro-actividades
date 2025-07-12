@@ -50,9 +50,6 @@ def search_duplicated(document: int):
 async def get_patientid(patient_id: str): #cambio función ASYNC Daniel 11 JULIO
     return search_patientsid("_id", ObjectId(patient_id))
 
-    #patientById = patients_collection.find_one({"_id":patientId})
-
-#GET PATIENT BY ID FUNCIONANDO
 def search_patientsid(field: str, key): # función para obtener un patient
     try:
         searcher = patient_schema(db_client.conectacare.patient.find_one({field: key}))
@@ -62,7 +59,7 @@ def search_patientsid(field: str, key): # función para obtener un patient
 
 #GET PATIENTS FUNCIONANDO
 @router.get("/", summary="Obtener lista de pacientes", response_description="Lista de pacientes")
-def get_patients():
+async def get_patients():
 
     patients = patient_schema_starting_list(db_client.conectacare.patient.find())
     return patients
@@ -102,7 +99,7 @@ async def add_medication_log(patient_id: str, medication_log: MedicationLog):
 
 #FUNCIONANDO
 @router.get("/{patient_id}/medication_logs", summary="Obtener registros de medicación de un paciente", response_description="Lista de registros de medicación")
-def get_medication_logs(patient_id: str):
+async def get_medication_logs(patient_id: str):
 
     try:
         object_id = ObjectId(patient_id)
@@ -118,17 +115,18 @@ def get_medication_logs(patient_id: str):
 
     return medication_logs_schema(medication_logs)
 
-
+#PUT FUNCIONANDO
 @router.put("/{patient_id}/medication_logs/{log_id}", response_model=MedicationLog, summary="Actualizar un registro de medicación de un paciente", response_description="Registro de medicación actualizado")
-def update_medication_log(patient_id: str, log_id: str, updated_log: MedicationLog):
+async def update_medication_log(patient_id: str, log_id: str, updated_log: MedicationLog):
 
     try:
         object_id = ObjectId(patient_id)
+        log_id_object = ObjectId(log_id)
     except bson_errors.InvalidId:
-        raise HTTPException(status_code=400, detail="Formato de patient_id inválido")
+        raise HTTPException(status_code=400, detail="Formato de patient_id o log_id inválido")
 
     updated_log_dict = updated_log.dict()
-    log_id_object = ObjectId(log_id)
+
     updated_log_dict["id"] = log_id_object
 
     result = db_client.conectacare.patient.update_one(
@@ -169,7 +167,7 @@ async def add_meal(patient_id: str, meal: Meal):
 
 #FUNCIONANDO
 @router.get("/{patient_id}/meals", summary="Obtener registros de comidas de un paciente", response_description="Lista de registros de comidas")
-def get_meals(patient_id: str):
+async def get_meals(patient_id: str):
     try:
         object_id = ObjectId(patient_id)
     except bson_errors.InvalidId:
@@ -183,37 +181,27 @@ def get_meals(patient_id: str):
 
     return meals_schema(meals)
 
+#PUT FUNCIONANDO
+@router.put("/{patient_id}/meals/{meal_id}", response_model=Meal, summary="Actualizar un registro de comida de un paciente", response_description="Registro de comida actualizado")
+async def update_meal(patient_id: str, meal_id: str, updated_meal: Meal):
 
-@router.put("/{patient_id}/meals", summary="Actualizar un registro de comida de un paciente", response_description="Registro de comida actualizado")
-def update_meal(patient_id: str, updated_meal: Meal):
-    """
-    Actualiza un registro específico de comida del paciente especificado.
-
-    Parámetros:
-    - patient_id: ID del paciente.
-    - updated_meal (en el body): Registro completo de comida. Se usará el campo `datetime` como identificador.
-
-    Retorna:
-    - Mensaje de éxito si el registro fue actualizado.
-    - Error 404 si no se encontró el registro a actualizar.
-    """
     try:
         object_id = ObjectId(patient_id)
+        meal_id_object = ObjectId(meal_id)
     except bson_errors.InvalidId:
-        raise HTTPException(status_code=400, detail="Formato de patient_id inválido")
-
-    updated_datetime = updated_meal.datetime
-
+        raise HTTPException(status_code=400, detail="Formato de patient_id o meal_id inválido")
+    
+    
     updated_meal_dict = updated_meal.dict()
-    updated_meal_dict["datetime"] = updated_datetime
+    updated_meal_dict["id"]= meal_id_object
 
-    result = patients_collection.update_one(
-        {"_id": object_id, "meals.datetime": updated_datetime},
+    result = db_client.conectacare.patient.update_one(
+        {"_id": object_id, "meals.id": meal_id_object},
         {"$set": {"meals.$": updated_meal_dict}}
     )
 
     if result.modified_count == 1:
-        return {"message": "Registro de comida actualizado exitosamente"}
+        return Meal(**meal_schema(updated_meal_dict))
 
     raise HTTPException(status_code=404, detail="No se encontró el registro a actualizar")
 
@@ -244,7 +232,7 @@ async def add_hygiene_log(patient_id: str, hygiene_log: HygieneLog):
 
 #FUNCIONANDO
 @router.get("/{patient_id}/hygiene_logs", summary="Obtener registros de higiene de un paciente", response_description="Lista de registros de higiene")
-def get_hygiene_logs(patient_id: str):
+async def get_hygiene_logs(patient_id: str):
     try:
         object_id = ObjectId(patient_id)
     except bson_errors.InvalidId:
@@ -258,43 +246,33 @@ def get_hygiene_logs(patient_id: str):
 
     return hygiene_logs_schema(hygiene_logs)
 
+# PUT FUNCIONANDO
+@router.put("/{patient_id}/hygiene_logs/{hygiene_id}", response_model=HygieneLog, summary="Actualizar un registro de higiene de un paciente", response_description="Registro de higiene actualizado")
+async def update_hygiene_log(patient_id: str, hygiene_id: str, updated_log: HygieneLog):
 
-@router.put("/{patient_id}/hygiene_logs", summary="Actualizar un registro de higiene de un paciente", response_description="Registro de higiene actualizado")
-def update_hygiene_log(patient_id: str, updated_log: HygieneLog):
-    """
-    Actualiza un registro específico de higiene del paciente especificado.
-
-    Parámetros:
-    - patient_id: ID del paciente.
-    - updated_log (en el body): Registro completo de higiene. Se usará el campo `datetime` como identificador.
-
-    Retorna:
-    - Mensaje de éxito si el registro fue actualizado.
-    - Error 404 si no se encontró el registro a actualizar.
-    """
     try:
         object_id = ObjectId(patient_id)
+        hygiene_id_object = ObjectId(hygiene_id)
     except bson_errors.InvalidId:
-        raise HTTPException(status_code=400, detail="Formato de patient_id inválido")
-
-    updated_datetime = updated_log.datetime
+        raise HTTPException(status_code=400, detail="Formato de patient_id ó hygiene_id inválido")
+    
 
     updated_log_dict = updated_log.dict()
-    updated_log_dict["datetime"] = updated_datetime
+    updated_log_dict["id"] = hygiene_id_object
 
-    result = patients_collection.update_one(
-        {"_id": object_id, "hygiene_logs.datetime": updated_datetime},
+    result = db_client.conectacare.patient.update_one(
+        {"_id": object_id, "hygiene_logs.id": hygiene_id_object},
         {"$set": {"hygiene_logs.$": updated_log_dict}}
     )
 
     if result.modified_count == 1:
-        return {"message": "Registro de higiene actualizado exitosamente"}
+        return HygieneLog(**hygiene_log_schema(updated_log_dict))
 
     raise HTTPException(status_code=404, detail="No se encontró el registro a actualizar")
 
 #POST FUNCIONANDO
 @router.post("/{patient_id}/vital_signs", response_model=VitalSigns, summary="Registrar signos vitales para un paciente", response_description="Signos vitales registrados")
-def add_vital_signs(patient_id: str, vital_signs: VitalSigns):
+async def add_vital_signs(patient_id: str, vital_signs: VitalSigns):
     try:
         object_id = ObjectId(patient_id)
     except bson_errors.InvalidId:
@@ -322,7 +300,7 @@ def add_vital_signs(patient_id: str, vital_signs: VitalSigns):
 
 #FUNCIONANDO
 @router.get("/{patient_id}/vital_signs", summary="Obtener registros de signos vitales de un paciente", response_description="Lista de registros de signos vitales")
-def get_vital_signs(patient_id: str):
+async def get_vital_signs(patient_id: str):
     try:
         object_id = ObjectId(patient_id)
     except bson_errors.InvalidId:
@@ -336,44 +314,34 @@ def get_vital_signs(patient_id: str):
 
     return vital_signs_schema(vital_signs)
 
+#EN PROGRESO
+@router.put("/{patient_id}/vital_signs/{vital_id}", response_model=VitalSigns, summary="Actualizar un registro de signos vitales de un paciente", response_description="Registro de signos vitales actualizado")
+def update_vital_signs(patient_id: str, vital_id: str, updated_signs: VitalSigns):
 
-@router.put("/{patient_id}/vital_signs", summary="Actualizar un registro de signos vitales de un paciente", response_description="Registro de signos vitales actualizado")
-def update_vital_signs(patient_id: str, updated_signs: VitalSigns):
-    """
-    Actualiza un registro específico de signos vitales del paciente especificado.
-
-    Parámetros:
-    - patient_id: ID del paciente.
-    - updated_signs (en el body): Registro completo de signos vitales. Se usará el campo `datetime` como identificador.
-
-    Retorna:
-    - Mensaje de éxito si el registro fue actualizado.
-    - Error 404 si no se encontró el registro a actualizar.
-    """
     try:
         object_id = ObjectId(patient_id)
+        vital_id_object = ObjectId(vital_id)
+
     except bson_errors.InvalidId:
         raise HTTPException(status_code=400, detail="Formato de patient_id inválido")
 
-    updated_datetime = updated_signs.datetime
-
     updated_signs_dict = updated_signs.dict()
-    updated_signs_dict["datetime"] = updated_datetime
+    updated_signs_dict["id"] = vital_id_object
 
-    result = patients_collection.update_one(
-        {"_id": object_id, "vital_signs.datetime": updated_datetime},
+    result = db_client.conectacare.patient.update_one(
+        {"_id": object_id, "vital_signs.id": vital_id_object},
         {"$set": {"vital_signs.$": updated_signs_dict}}
     )
 
     if result.modified_count == 1:
-        return {"message": "Registro de signos vitales actualizado exitosamente"}
+        return VitalSigns(**vital_sign_schema(updated_signs_dict))
 
     raise HTTPException(status_code=404, detail="No se encontró el registro a actualizar")
 
 
 #POST FUNCIONANDO
 @router.post("/{patient_id}/symptoms", response_model=Symptom, summary="Registrar síntoma para un paciente", response_description="Síntoma registrado")
-def add_symptom(patient_id: str, symptom: Symptom):
+async def add_symptom(patient_id: str, symptom: Symptom):
     try:
         object_id = ObjectId(patient_id)
     except bson_errors.InvalidId:
@@ -398,7 +366,7 @@ def add_symptom(patient_id: str, symptom: Symptom):
 
 #FUNCIONANDO
 @router.get("/{patient_id}/symptoms", summary="Obtener registros de síntomas de un paciente", response_description="Lista de registros de síntomas")
-def get_symptoms(patient_id: str):
+async def get_symptoms(patient_id: str):
     try:
         object_id = ObjectId(patient_id)
     except bson_errors.InvalidId:
@@ -412,42 +380,32 @@ def get_symptoms(patient_id: str):
 
     return symptoms_schema(symptoms)
 
-@router.put("/{patient_id}/symptoms", summary="Actualizar un registro de síntomas de un paciente", response_description="Registro de síntoma actualizado")
-def update_symptom(patient_id: str, updated_symptom: Symptom):
-    """
-    Actualiza un registro específico de síntomas del paciente especificado.
+#FUNCIONANDO
+@router.put("/{patient_id}/symptoms/{symptom_id}", response_model= Symptom, summary="Actualizar un registro de síntomas de un paciente", response_description="Registro de síntoma actualizado")
+async def update_symptom(patient_id: str, symptom_id: str, updated_symptom: Symptom):
 
-    Parámetros:
-    - patient_id: ID del paciente.
-    - updated_symptom (en el body): Registro completo de síntoma. Se usará el campo `datetime` como identificador.
-
-    Retorna:
-    - Mensaje de éxito si el registro fue actualizado.
-    - Error 404 si no se encontró el registro a actualizar.
-    """
     try:
         object_id = ObjectId(patient_id)
+        symptom_id_log = ObjectId(symptom_id)
     except bson_errors.InvalidId:
         raise HTTPException(status_code=400, detail="Formato de patient_id inválido")
 
-    updated_datetime = updated_symptom.datetime
-
     updated_symptom_dict = updated_symptom.dict()
-    updated_symptom_dict["datetime"] = updated_datetime
+    updated_symptom_dict["id"] = symptom_id_log
 
-    result = patients_collection.update_one(
-        {"_id": object_id, "symptoms.datetime": updated_datetime},
+    result = db_client.conectacare.patient.update_one(
+        {"_id": object_id, "symptoms.id": symptom_id_log},
         {"$set": {"symptoms.$": updated_symptom_dict}}
     )
 
     if result.modified_count == 1:
-        return {"message": "Registro de síntoma actualizado exitosamente"}
+        return Symptom(**symptom_schema(updated_symptom_dict))
 
     raise HTTPException(status_code=404, detail="No se encontró el registro a actualizar")
 
 #POST FUNCIONANDO
 @router.post("/{patient_id}/medical_history", response_model=MedicalHistoryEntry, summary="Registrar entrada en historial médico de un paciente", response_description="Entrada en historial médico registrada")
-def add_medical_history_entry(patient_id: str, entry: MedicalHistoryEntry):
+async def add_medical_history_entry(patient_id: str, entry: MedicalHistoryEntry):
     try:
         object_id = ObjectId(patient_id)
     except bson_errors.InvalidId:
@@ -472,7 +430,7 @@ def add_medical_history_entry(patient_id: str, entry: MedicalHistoryEntry):
 
 #FUNCIONANDO
 @router.get("/{patient_id}/medical_history", summary="Obtener historial médico de un paciente", response_description="Historial médico")
-def get_medical_history(patient_id: str):
+async def get_medical_history(patient_id: str):
     try:
         object_id = ObjectId(patient_id)
     except bson_errors.InvalidId:
@@ -486,36 +444,26 @@ def get_medical_history(patient_id: str):
 
     return medical_history_schema(medical_history)
 
+#PUT FUNCIONANDO
+@router.put("/{patient_id}/medical_history/{medical_history_id}", response_model= MedicalHistoryEntry, summary="Actualizar un registro del historial médico de un paciente", response_description="Registro del historial médico actualizado")
+async def update_medical_history_entry(patient_id: str, medical_history_id: str, updated_entry: MedicalHistoryEntry):
 
-@router.put("/{patient_id}/medical_history", summary="Actualizar un registro del historial médico de un paciente", response_description="Registro del historial médico actualizado")
-def update_medical_history_entry(patient_id: str, updated_entry: MedicalHistoryEntry):
-    """
-    Actualiza un registro específico del historial médico del paciente especificado.
-
-    Parámetros:
-    - patient_id: ID del paciente.
-    - updated_entry (en el body): Registro completo de historial médico. Se usará el campo `date` como identificador.
-
-    Retorna:
-    - Mensaje de éxito si el registro fue actualizado.
-    - Error 404 si no se encontró el registro a actualizar.
-    """
     try:
         object_id = ObjectId(patient_id)
+        medical_history_id_object = ObjectId(medical_history_id)
+
     except bson_errors.InvalidId:
         raise HTTPException(status_code=400, detail="Formato de patient_id inválido")
 
-    updated_datetime = updated_entry.date
-
     updated_entry_dict = updated_entry.dict()
-    updated_entry_dict["date"] = updated_datetime
+    updated_entry_dict["id"] = medical_history_id_object
 
-    result = patients_collection.update_one(
-        {"_id": object_id, "medical_history.date": updated_datetime},
+    result = db_client.conectacare.patient.update_one(
+        {"_id": object_id, "medical_history.id": medical_history_id_object},
         {"$set": {"medical_history.$": updated_entry_dict}}
     )
 
     if result.modified_count == 1:
-        return {"message": "Registro del historial médico actualizado exitosamente"}
+        return MedicalHistoryEntry(**medical_history_entry_schema(updated_entry_dict))
 
     raise HTTPException(status_code=404, detail="No se encontró el registro a actualizar")
