@@ -45,6 +45,7 @@ def hygiene_logs_schema(logs) -> list:
 
 def vital_sign_schema(sign) -> dict:
     return {
+        "id": str(sign["id"]),
         "datetime": sign["datetime"],
         "blood_pressure": sign["blood_pressure"],
         "heart_rate": sign["heart_rate"],
@@ -57,6 +58,7 @@ def vital_signs_schema(signs) -> list:
 
 def symptom_schema(symptom) -> dict:
     return {
+        "id": str(symptom["id"]),
         "datetime": symptom["datetime"],
         "description": symptom["description"],
         "observations": symptom.get("observations", "")

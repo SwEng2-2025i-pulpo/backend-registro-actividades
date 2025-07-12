@@ -3,7 +3,7 @@ from app.db.client import db_client
 from bson import ObjectId
 from datetime import datetime
 from bson import ObjectId, errors as bson_errors
-from app.db.schemas.activity import *
+from app.db.schemas.activity import * 
 from app.db.schemas.patient import patient_schema
 from app.db.models.activity import MedicationLog, Meal, HygieneLog, VitalSigns, Symptom, MedicalHistoryEntry
 from app.db.models.patient import Patient
@@ -339,29 +339,30 @@ def update_hygiene_log(patient_id: str, updated_log: HygieneLog):
 
     raise HTTPException(status_code=404, detail="No se encontró el registro a actualizar")
 
-
-@router.post("/{patient_id}/vital_signs", summary="Registrar signos vitales para un paciente", response_description="Signos vitales registrados")
+#POST FUNCIONANDO
+@router.post("/{patient_id}/vital_signs", response_model=VitalSigns, summary="Registrar signos vitales para un paciente", response_description="Signos vitales registrados")
 def add_vital_signs(patient_id: str, vital_signs: VitalSigns):
     try:
         object_id = ObjectId(patient_id)
     except bson_errors.InvalidId:
         raise HTTPException(status_code=400, detail="Formato de patient_id inválido")
 
-    patient = patients_collection.find_one({"_id": object_id})
+    patient = db_client.conectacare.patient.find_one({"_id": object_id})
     if not patient:
         raise HTTPException(status_code=404, detail="Paciente no encontrado")
 
     vital_signs_dict = vital_signs.dict()
+    vital_signs_dict["id"] = ObjectId()
 
-    result = patients_collection.update_one(
+    result = db_client.conectacare.patient.update_one(
         {"_id": object_id},
         {"$push": {"vital_signs": vital_signs_dict}}
     )
 
     if result.modified_count == 1:
-        return {"message": "Registro de signos vitales agregado exitosamente"}
+        return VitalSigns(**vital_sign_schema(vital_signs_dict))
 
-    raise HTTPException(status_code=500, detail="No se pudo agregar el registro")
+    raise HTTPException(status_code=400, detail="No se pudo agregar el registro")
 
 
 @router.get("/{patient_id}/vital_signs", summary="Obtener registros de signos vitales de un paciente", response_description="Lista de registros de signos vitales")
@@ -423,28 +424,30 @@ def update_vital_signs(patient_id: str, updated_signs: VitalSigns):
     raise HTTPException(status_code=404, detail="No se encontró el registro a actualizar")
 
 
-@router.post("/{patient_id}/symptoms", summary="Registrar síntoma para un paciente", response_description="Síntoma registrado")
+#POST FUNCIONANDO
+@router.post("/{patient_id}/symptoms", response_model=Symptom, summary="Registrar síntoma para un paciente", response_description="Síntoma registrado")
 def add_symptom(patient_id: str, symptom: Symptom):
     try:
         object_id = ObjectId(patient_id)
     except bson_errors.InvalidId:
         raise HTTPException(status_code=400, detail="Formato de patient_id inválido")
 
-    patient = patients_collection.find_one({"_id": object_id})
+    patient = db_client.conectacare.patient.find_one({"_id": object_id})
     if not patient:
         raise HTTPException(status_code=404, detail="Paciente no encontrado")
 
     symptom_dict = symptom.dict()
+    symptom_dict["id"] = ObjectId()
 
-    result = patients_collection.update_one(
+    result = db_client.conectacare.patient.update_one(
         {"_id": object_id},
         {"$push": {"symptoms": symptom_dict}}
     )
 
     if result.modified_count == 1:
-        return {"message": "Registro de síntoma agregado exitosamente"}
+        return Symptom(**symptom_schema(symptom_dict))
 
-    raise HTTPException(status_code=500, detail="No se pudo agregar el registro")
+    raise HTTPException(status_code=400, detail="No se pudo agregar el registro")
 
 
 @router.get("/{patient_id}/symptoms", summary="Obtener registros de síntomas de un paciente", response_description="Lista de registros de síntomas")
@@ -470,7 +473,6 @@ def get_symptoms(patient_id: str):
     symptoms = patient.get("symptoms", [])
 
     return symptoms_schema(symptoms)
-
 
 @router.put("/{patient_id}/symptoms", summary="Actualizar un registro de síntomas de un paciente", response_description="Registro de síntoma actualizado")
 def update_symptom(patient_id: str, updated_symptom: Symptom):
@@ -505,55 +507,30 @@ def update_symptom(patient_id: str, updated_symptom: Symptom):
 
     raise HTTPException(status_code=404, detail="No se encontró el registro a actualizar")
 
-
-@router.post("/{patient_id}/medical_history", summary="Registrar entrada en historial médico de un paciente", response_description="Entrada en historial médico registrada")
+#POST FUNCIONANDO
+@router.post("/{patient_id}/medical_history", response_model=MedicalHistoryEntry, summary="Registrar entrada en historial médico de un paciente", response_description="Entrada en historial médico registrada")
 def add_medical_history_entry(patient_id: str, entry: MedicalHistoryEntry):
     try:
         object_id = ObjectId(patient_id)
     except bson_errors.InvalidId:
         raise HTTPException(status_code=400, detail="Formato de patient_id inválido")
 
-    patient = patients_collection.find_one({"_id": object_id})
+    patient = db_client.conectacare.patient.find_one({"_id": object_id})
     if not patient:
         raise HTTPException(status_code=404, detail="Paciente no encontrado")
 
     entry_dict = entry.dict()
-
-    result = patients_collection.update_one(
+    entry_dict["id"] = ObjectId()
+    
+    result = db_client.conectacare.patient.update_one(
         {"_id": object_id},
         {"$push": {"medical_history": entry_dict}}
     )
 
     if result.modified_count == 1:
-        return {"message": "Registro en historial médico agregado exitosamente"}
+        return MedicalHistoryEntry(**medical_history_entry_schema(entry_dict))
 
-    raise HTTPException(status_code=500, detail="No se pudo agregar el registro")
-
-
-# @router.get("/{patient_id}/medical_history", summary="Obtener historial médico de un paciente", response_description="Historial médico")
-# def get_medical_history(patient_id: str):
-#     """
-#     Obtiene todas las entradas del historial médico del paciente especificado.
-#     """
-#     try:
-#         object_id = ObjectId(patient_id)
-#     except bson_errors.InvalidId:
-#         raise HTTPException(status_code=400, detail="Formato de patient_id inválido")
-
-#     patient = search_patientsidnew("_id", object_id)
-#     return patient.medical_history
-
-# def search_patientsidnew(field: str, key):
-#     raw_patient = db_client.conectacare.patient.find_one({field: key})
-#     if not raw_patient:
-#         raise HTTPException(status_code=404, detail="Paciente no encontrado")
-
-#     try:
-#         return Patient(**patient_schema(raw_patient))
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=f"Error al procesar el paciente: {str(e)}")
-
-
+    raise HTTPException(status_code=400, detail="No se pudo agregar el registro")
 
 @router.get("/{patient_id}/medical_history", summary="Obtener historial médico de un paciente", response_description="Historial médico")
 def get_medical_history(patient_id: str):

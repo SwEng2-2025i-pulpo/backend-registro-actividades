@@ -32,6 +32,7 @@ class HygieneLog(BaseModel):
 
 
 class VitalSigns(BaseModel):
+    id: Optional[str] = None # puede ser opcional porque mongo asigna ids automaticos
     datetime: datetime
     blood_pressure: Dict[str, int]  # Ej: {"systolic": 130, "diastolic": 85}
     heart_rate: int
@@ -39,6 +40,7 @@ class VitalSigns(BaseModel):
 
 
 class Symptom(BaseModel):
+    id: Optional[str] = None # puede ser opcional porque mongo asigna ids automaticos
     datetime: datetime
     description: str
     observations: Optional[str] = ""
