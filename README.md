@@ -104,11 +104,24 @@ Todos los modelos de datos son validados usando **Pydantic**.
 👉 Los demás modelos (meals, hygiene_logs, vital_signs, symptoms, medical_history) siguen una estructura similar → ver /docs para ejemplos completos.
 
 ## 🚧 Cómo probar el servicio
-Ejecutar el backend:
 
-```bash
-uvicorn app.main:app --reload
-```
+Crea y activa un entorno virtual:
+
+   ```bash
+   python -m venv venv
+   source venv/bin/activate   # Linux/Mac
+   venv\Scripts\activate      # Windows
+   ```
+Instala las dependencias:
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+Ejecutar el backend:
+  ```bash
+  uvicorn app.main:app --reload --port 8000
+  ```
 
 Acceder a la documentación interactiva en:
 
