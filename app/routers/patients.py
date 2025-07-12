@@ -119,36 +119,25 @@ def get_medication_logs(patient_id: str):
     return medication_logs_schema(medication_logs)
 
 
-@router.put("/{patient_id}/medication_logs", summary="Actualizar un registro de medicación de un paciente", response_description="Registro de medicación actualizado")
-def update_medication_log(patient_id: str, updated_log: MedicationLog):
-    """
-    Actualiza un registro específico de medicación del paciente especificado.
+@router.put("/{patient_id}/medication_logs/{log_id}", response_model=MedicationLog, summary="Actualizar un registro de medicación de un paciente", response_description="Registro de medicación actualizado")
+def update_medication_log(patient_id: str, log_id: str, updated_log: MedicationLog):
 
-    Parámetros:
-    - patient_id: ID del paciente.
-    - updated_log (en el body): Registro completo de medicación. Se usará el campo `datetime` como identificador.
-
-    Retorna:
-    - Mensaje de éxito si el registro fue actualizado.
-    - Error 404 si no se encontró el registro a actualizar.
-    """
     try:
         object_id = ObjectId(patient_id)
     except bson_errors.InvalidId:
         raise HTTPException(status_code=400, detail="Formato de patient_id inválido")
 
-    updated_datetime = updated_log.datetime
-
     updated_log_dict = updated_log.dict()
-    updated_log_dict["datetime"] = updated_datetime
+    log_id_object = ObjectId(log_id)
+    updated_log_dict["id"] = log_id_object
 
-    result = patients_collection.update_one(
-        {"_id": object_id, "medication_logs.datetime": updated_datetime},
+    result = db_client.conectacare.patient.update_one(
+        {"_id": object_id, "medication_logs.id": log_id_object},
         {"$set": {"medication_logs.$": updated_log_dict}}
     )
 
     if result.modified_count == 1:
-        return {"message": "Registro de medicación actualizado exitosamente"}
+        return MedicationLog(**medication_log_schema(updated_log_dict))
 
     raise HTTPException(status_code=404, detail="No se encontró el registro a actualizar")
 
@@ -317,6 +306,9 @@ def add_vital_signs(patient_id: str, vital_signs: VitalSigns):
 
     vital_signs_dict = vital_signs.dict()
     vital_signs_dict["id"] = ObjectId()
+
+    for item in vital_signs_dict["weight_by_month"]:
+        item["id"] = ObjectId()
 
     result = db_client.conectacare.patient.update_one(
         {"_id": object_id},
