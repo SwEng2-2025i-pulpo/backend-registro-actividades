@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Optional, Dict
 
 class MedicationLog(BaseModel):
+    id: Optional[str] = None  # Para permitir la devolución con ObjectId convertido a string
     datetime: datetime
     medication_name: str
     dose: str
@@ -12,6 +13,7 @@ class MedicationLog(BaseModel):
 
 
 class Meal(BaseModel):
+    id: str | None = None # puede ser opcional porque mongo asigna ids automaticos
     datetime: datetime
     meal_type: str
     description: str
@@ -42,11 +44,13 @@ class Symptom(BaseModel):
 
 
 class MedicalHistoryEntry(BaseModel):
+    id: Optional[str] = None  # <-- cambio hecho por Danny
     date: datetime
     description: str
     notes: Optional[str] = ""
 
 
 class WeightEntry(BaseModel):
+    id: Optional[str] = None  # <-- nuevo campo agregado por Daniel opcional porque mongo lo pone
     month: str # formato YYYY-MM
     value: int # en kg

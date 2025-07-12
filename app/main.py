@@ -1,28 +1,26 @@
 from fastapi import FastAPI
-from app.routers import caretakers, patients
 from fastapi.middleware.cors import CORSMiddleware
+from app.routers import caretakers, patients
 
-app = FastAPI() # Inicializamos FastAPI
+app = FastAPI()  # Inicializamos FastAPI
 
-# Routers
-
-app.include_router(caretakers.router) # Inicializamos la api desde router.
-app.include_router(patients.router)
-
-
-# Configuración de CORS
+# Configuración de CORS (esto debe estar antes de incluir los routers)
 origins = [
-    "http://localhost:3000",  # React local
-    # Añadir otros orígenes aquí, como el dominio en producción
+    "http://localhost:5173",  # Frontend local en Vite
+    # Puedes añadir más orígenes aquí si es necesario
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,  # Origenes permitidos
+    allow_origins=origins,        # Orígenes permitidos
     allow_credentials=True,
-    allow_methods=["*"],    # Métodos permitidos
-    allow_headers=["*"],    # Encabezados permitidos
+    allow_methods=["*"],          # Métodos permitidos (GET, POST, etc.)
+    allow_headers=["*"],          # Encabezados permitidos
 )
+
+# Routers
+app.include_router(caretakers.router)
+app.include_router(patients.router)
 
 
 # uvicorn app.main:app --reload

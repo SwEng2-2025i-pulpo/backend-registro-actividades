@@ -1,5 +1,6 @@
 def medication_log_schema(log) -> dict:
     return {
+        "id": str(log["id"]),  # <-- este es clave
         "datetime": log["datetime"],
         "medication_name": log["medication_name"],
         "dose": log["dose"],
@@ -8,12 +9,14 @@ def medication_log_schema(log) -> dict:
         "observations": log.get("observations", "")
     }
 
+
 def medication_logs_schema(logs) -> list:
     return [medication_log_schema(log) for log in logs]
 
 
 def meal_schema(meal) -> dict:
     return {
+        "id": str(meal["id"]),
         "datetime": meal["datetime"],
         "meal_type": meal["meal_type"],
         "description": meal["description"],
@@ -64,6 +67,7 @@ def symptoms_schema(symptoms) -> list:
 
 def medical_history_entry_schema(entry) -> dict:
     return {
+        "id": str(entry.get("id", "")), # agregado por Danny
         "date": entry["date"],
         "description": entry["description"],
         "notes": entry.get("notes", "")

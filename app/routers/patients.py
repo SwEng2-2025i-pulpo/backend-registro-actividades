@@ -3,63 +3,61 @@ from app.db.client import db_client
 from bson import ObjectId
 from datetime import datetime
 from bson import ObjectId, errors as bson_errors
-from app.db.schemas.activity import medication_logs_schema, meals_schema, hygiene_logs_schema, vital_signs_schema, symptoms_schema, medical_history_schema
+from app.db.schemas.activity import medication_log_schema, medication_logs_schema,meal_schema, meals_schema, hygiene_logs_schema, vital_signs_schema, symptoms_schema, medical_history_schema
 from app.db.schemas.patient import patient_schema
 from app.db.models.activity import MedicationLog, Meal, HygieneLog, VitalSigns, Symptom, MedicalHistoryEntry
 from app.db.models.patient import Patient
+from datetime import datetime, date
 
 router = APIRouter(prefix="/patients", tags=["patients"])
 
 # Definir la colección de pacientes
 patients_collection = db_client["conectacare"]["patient"]
 
+#POST PACIENTE FUNCIONANDO
+@router.post("/", response_model = Patient, summary="Crear un nuevo paciente", response_description="Paciente creado")
 
-@router.post("/", summary="Crear un nuevo paciente", response_description="Paciente creado")
-def create_patient(patient_data: dict = Body(...)):
-    """
-    Crea un nuevo paciente en la base de datos.
+async def create_patient(patient_data: Patient):
 
-    Parámetros:
-    - patient_data (en el body): JSON con los campos del paciente.
+    duplicated = search_duplicated(patient_data.document)
+    if isinstance(duplicated, Patient):
+        raise HTTPException(status_code=409, detail="El documento ya existe")
 
-    Retorna:
-    - El paciente creado con su ID asignado.
-    """
-    try:
-        # Convertir birth_date a datetime
-        if "birth_date" in patient_data:
-            patient_data["birth_date"] = datetime.fromisoformat(
-                patient_data["birth_date"].replace("Z", "+00:00")
-            )
-        
-        # Convertir caretaker_id a ObjectId
-        if "caretaker_id" in patient_data:
-            patient_data["caretaker_id"] = ObjectId(patient_data["caretaker_id"])
+    patient_dict = dict(patient_data)
+    del patient_dict["id"]
 
-        # Insertar paciente en la colección
-        result = patients_collection.insert_one(patient_data)
+    # Convertir birth_date de date a datetime
+    if isinstance(patient_dict["birth_date"], date):
+        patient_dict["birth_date"] = datetime.combine(patient_dict["birth_date"], datetime.min.time())
 
-        # Recuperar el paciente insertado
-        new_patient = patients_collection.find_one({"_id": result.inserted_id})
+     # Convertimos caretakers_ids de str a ObjectId si existe
+    if "caretakers_ids" in patient_dict:
+        patient_dict["caretakers_ids"] = [ObjectId(cid) for cid in patient_dict["caretakers_ids"]]
 
-        return patient_schema(new_patient)
+    ide = db_client.conectacare.patient.insert_one(patient_dict).inserted_id
+    new_patient = patient_schema(db_client.conectacare.patient.find_one({"_id": ide}))
+    return Patient(**new_patient)
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al crear el paciente: {str(e)}")
 
+def search_duplicated(document: int):
+    patient_found = db_client.conectacare.patient.find_one({"document": document})
+    if patient_found:
+        return Patient(**patient_schema(patient_found))
+    return None
+    
+#GET POR ID FUNCIONANDO
 @router.get("/{patient_id}", summary="Obtener paciente por id", response_description="Paciente por id")
-def get_patientid(patient_id: str):
+async def get_patientid(patient_id: str): #cambio función ASYNC Daniel 11 JULIO
     return search_patientsid("_id", ObjectId(patient_id))
 
     #patientById = patients_collection.find_one({"_id":patientId})
 
-def search_patientsid(field: str, key): # función para obtener un caretaker
+def search_patientsid(field: str, key): # función para obtener un patient
     try:
-        duplicate = patient_schema(db_client.conectacare.patient.find_one({field: key}))
-        return Patient(**duplicate)
+        searcher = patient_schema(db_client.conectacare.patient.find_one({field: key}))
+        return Patient(**searcher)
     except:
         return {"error": "no se ha encontrado el usuario getbyid"}
-
 
 
 @router.get("/", summary="Obtener lista de pacientes", response_description="Lista de pacientes")
@@ -80,50 +78,37 @@ def get_patients():
         for patient in patients
     ]
 
-
-@router.post("/{patient_id}/medication_logs", summary="Registrar medicación para un paciente", response_description="Medicación registrada")
-def add_medication_log(patient_id: str, medication_log: dict = Body(...)):
+#POST FUNCIONANDO
+@router.post("/{patient_id}/medication_logs", response_model=MedicationLog, summary="Registrar medicación para un paciente", response_description="Medicación registrada")
+async def add_medication_log(patient_id: str, medication_log: MedicationLog):
     """
     Registra un nuevo evento de administración de medicación para el paciente especificado.
-
-    Parámetros:
-    - patient_id: ID del paciente.
-    - medication_log (en el body): JSON con los siguientes campos:
-        - datetime (ISO 8601 string).
-        - medication_name (str).
-        - dose (str).
-        - route (str).
-        - status (str).
-        - observations (opcional, str).
-
-    Retorna:
-    - Mensaje de éxito o error.
     """
+
+    # Validar formato de ObjectId
     try:
         object_id = ObjectId(patient_id)
     except bson_errors.InvalidId:
         raise HTTPException(status_code=400, detail="Formato de patient_id inválido")
 
+    # Verificar si el paciente existe
     patient = patients_collection.find_one({"_id": object_id})
-
     if not patient:
         raise HTTPException(status_code=404, detail="Paciente no encontrado")
 
-    # Convertir datetime (str) a datetime.datetime
-    try:
-        medication_log["datetime"] = datetime.fromisoformat(
-            medication_log["datetime"].replace("Z", "+00:00")
-        )
-    except Exception:
-        raise HTTPException(status_code=400, detail="Formato de datetime inválido. Debe ser ISO 8601.")
+    # Convertir a dict y agregar el campo `id` con un nuevo ObjectId
+    medication_log_data = medication_log.dict()
+    medication_log_data["id"] = ObjectId()
 
+    # Agregar el nuevo registro al arreglo de medication_logs
     result = patients_collection.update_one(
         {"_id": object_id},
-        {"$push": {"medication_logs": medication_log}}
+        {"$push": {"medication_logs": medication_log_data}}
     )
 
+  
     if result.modified_count == 1:
-        return {"message": "Registro de medicación agregado exitosamente"}
+        return MedicationLog(**medication_log_schema(medication_log_data))
 
     raise HTTPException(status_code=500, detail="No se pudo agregar el registro")
 
@@ -188,28 +173,66 @@ def update_medication_log(patient_id: str, updated_log: MedicationLog):
     raise HTTPException(status_code=404, detail="No se encontró el registro a actualizar")
 
 
-@router.post("/{patient_id}/meals", summary="Registrar comida para un paciente", response_description="Comida registrada")
-def add_meal(patient_id: str, meal: Meal):
+# @router.post("/{patient_id}/meals", summary="Registrar comida para un paciente", response_description="Comida registrada")
+# def add_meal(patient_id: str, meal: Meal):
+#     try:
+#         object_id = ObjectId(patient_id)
+#     except bson_errors.InvalidId:
+#         raise HTTPException(status_code=400, detail="Formato de patient_id inválido")
+
+#     patient = patients_collection.find_one({"_id": object_id})
+#     if not patient:
+#         raise HTTPException(status_code=404, detail="Paciente no encontrado")
+
+#     meal_dict = meal.dict()
+
+#     result = patients_collection.update_one(
+#         {"_id": object_id},
+#         {"$push": {"meals": meal_dict}}
+#     )
+
+#     if result.modified_count == 1:
+#         return {"message": "Registro de comida agregado exitosamente"}
+
+#     raise HTTPException(status_code=500, detail="No se pudo agregar el registro")
+
+@router.post("/{patient_id}/meals", response_model= Meal, summary="Registrar comida para un paciente", response_description="Comida registrada")
+async def add_meal(patient_id: str, meal: Meal):
     try:
-        object_id = ObjectId(patient_id)
+        id_del_paciente = (ObjectId(patient_id))
     except bson_errors.InvalidId:
         raise HTTPException(status_code=400, detail="Formato de patient_id inválido")
-
-    patient = patients_collection.find_one({"_id": object_id})
+    
+    patient = db_client.conectacare.patient.find_one({"_id": id_del_paciente}) #verificamos que el patient existe
     if not patient:
         raise HTTPException(status_code=404, detail="Paciente no encontrado")
 
-    meal_dict = meal.dict()
+    comida_a_agregar = meal.dict()
+    comida_a_agregar["_id"] = ObjectId() #asignamos el _id porque como hacemos un update y no un insert, mongo no lo asigna automaticamente.
 
-    result = patients_collection.update_one(
-        {"_id": object_id},
-        {"$push": {"meals": meal_dict}}
-    )
 
+    result = db_client.conectacare.patient.update_one(
+        {"_id": id_del_paciente},
+        {"$push": {"meals": comida_a_agregar}}
+    )    
+    
     if result.modified_count == 1:
-        return {"message": "Registro de comida agregado exitosamente"}
+        return meal_schema(comida_a_agregar)
+    
+    raise HTTPException(status_code=400, detail="No se pudo agregar el registro")
+ #   ----------------------- Antigua función usando colecciones
+    # try:
+    #     object_id = ObjectId(patient_id)
+    # except bson_errors.InvalidId:
+    #     raise HTTPException(status_code=400, detail="Formato de patient_id inválido")
 
-    raise HTTPException(status_code=500, detail="No se pudo agregar el registro")
+    # patient = patients_collection.find_one({"_id": object_id})
+    # if not patient:
+    #     raise HTTPException(status_code=404, detail="Paciente no encontrado")
+
+    # meal_dict = meal.dict()
+    # meal_dict["id"] = ObjectId()  # ✅ Este campo lo exige tu esquema de MongoDB
+
 
 
 @router.get("/{patient_id}/meals", summary="Obtener registros de comidas de un paciente", response_description="Lista de registros de comidas")
@@ -542,6 +565,31 @@ def add_medical_history_entry(patient_id: str, entry: MedicalHistoryEntry):
         return {"message": "Registro en historial médico agregado exitosamente"}
 
     raise HTTPException(status_code=500, detail="No se pudo agregar el registro")
+
+
+# @router.get("/{patient_id}/medical_history", summary="Obtener historial médico de un paciente", response_description="Historial médico")
+# def get_medical_history(patient_id: str):
+#     """
+#     Obtiene todas las entradas del historial médico del paciente especificado.
+#     """
+#     try:
+#         object_id = ObjectId(patient_id)
+#     except bson_errors.InvalidId:
+#         raise HTTPException(status_code=400, detail="Formato de patient_id inválido")
+
+#     patient = search_patientsidnew("_id", object_id)
+#     return patient.medical_history
+
+# def search_patientsidnew(field: str, key):
+#     raw_patient = db_client.conectacare.patient.find_one({field: key})
+#     if not raw_patient:
+#         raise HTTPException(status_code=404, detail="Paciente no encontrado")
+
+#     try:
+#         return Patient(**patient_schema(raw_patient))
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=f"Error al procesar el paciente: {str(e)}")
+
 
 
 @router.get("/{patient_id}/medical_history", summary="Obtener historial médico de un paciente", response_description="Historial médico")
