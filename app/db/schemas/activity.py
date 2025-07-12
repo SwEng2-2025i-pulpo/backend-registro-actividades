@@ -30,6 +30,7 @@ def meals_schema(meals) -> list:
 
 def hygiene_log_schema(log) -> dict:
     return {
+        "id": str(log["id"]),
         "datetime": log["datetime"],
         "type": log["type"],
         "condition": log["condition"],

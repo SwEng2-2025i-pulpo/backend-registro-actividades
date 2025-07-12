@@ -3,7 +3,7 @@ from app.db.client import db_client
 from bson import ObjectId
 from datetime import datetime
 from bson import ObjectId, errors as bson_errors
-from app.db.schemas.activity import medication_log_schema, medication_logs_schema,meal_schema, meals_schema, hygiene_logs_schema, vital_signs_schema, symptoms_schema, medical_history_schema
+from app.db.schemas.activity import *
 from app.db.schemas.patient import patient_schema
 from app.db.models.activity import MedicationLog, Meal, HygieneLog, VitalSigns, Symptom, MedicalHistoryEntry
 from app.db.models.patient import Patient
@@ -92,7 +92,7 @@ async def add_medication_log(patient_id: str, medication_log: MedicationLog):
         raise HTTPException(status_code=400, detail="Formato de patient_id inválido")
 
     # Verificar si el paciente existe
-    patient = patients_collection.find_one({"_id": object_id})
+    patient = db_client.conectacare.patient.find_one({"_id": object_id}) #verificamos que el patient existe
     if not patient:
         raise HTTPException(status_code=404, detail="Paciente no encontrado")
 
@@ -101,16 +101,15 @@ async def add_medication_log(patient_id: str, medication_log: MedicationLog):
     medication_log_data["id"] = ObjectId()
 
     # Agregar el nuevo registro al arreglo de medication_logs
-    result = patients_collection.update_one(
+    result = db_client.conectacare.patient.update_one(
         {"_id": object_id},
         {"$push": {"medication_logs": medication_log_data}}
     )
 
-  
     if result.modified_count == 1:
         return MedicationLog(**medication_log_schema(medication_log_data))
 
-    raise HTTPException(status_code=500, detail="No se pudo agregar el registro")
+    raise HTTPException(status_code=400, detail="No se pudo agregar el registro")
 
 
 @router.get("/{patient_id}/medication_logs", summary="Obtener registros de medicación de un paciente", response_description="Lista de registros de medicación")
@@ -172,34 +171,11 @@ def update_medication_log(patient_id: str, updated_log: MedicationLog):
 
     raise HTTPException(status_code=404, detail="No se encontró el registro a actualizar")
 
-
-# @router.post("/{patient_id}/meals", summary="Registrar comida para un paciente", response_description="Comida registrada")
-# def add_meal(patient_id: str, meal: Meal):
-#     try:
-#         object_id = ObjectId(patient_id)
-#     except bson_errors.InvalidId:
-#         raise HTTPException(status_code=400, detail="Formato de patient_id inválido")
-
-#     patient = patients_collection.find_one({"_id": object_id})
-#     if not patient:
-#         raise HTTPException(status_code=404, detail="Paciente no encontrado")
-
-#     meal_dict = meal.dict()
-
-#     result = patients_collection.update_one(
-#         {"_id": object_id},
-#         {"$push": {"meals": meal_dict}}
-#     )
-
-#     if result.modified_count == 1:
-#         return {"message": "Registro de comida agregado exitosamente"}
-
-#     raise HTTPException(status_code=500, detail="No se pudo agregar el registro")
-
+#POST FUNCIONANDO
 @router.post("/{patient_id}/meals", response_model= Meal, summary="Registrar comida para un paciente", response_description="Comida registrada")
 async def add_meal(patient_id: str, meal: Meal):
     try:
-        id_del_paciente = (ObjectId(patient_id))
+        id_del_paciente = ObjectId(patient_id)
     except bson_errors.InvalidId:
         raise HTTPException(status_code=400, detail="Formato de patient_id inválido")
     
@@ -208,7 +184,7 @@ async def add_meal(patient_id: str, meal: Meal):
         raise HTTPException(status_code=404, detail="Paciente no encontrado")
 
     comida_a_agregar = meal.dict()
-    comida_a_agregar["_id"] = ObjectId() #asignamos el _id porque como hacemos un update y no un insert, mongo no lo asigna automaticamente.
+    comida_a_agregar["id"] = ObjectId() #asignamos el _id porque como hacemos un update y no un insert, mongo no lo asigna automaticamente.
 
 
     result = db_client.conectacare.patient.update_one(
@@ -217,23 +193,9 @@ async def add_meal(patient_id: str, meal: Meal):
     )    
     
     if result.modified_count == 1:
-        return meal_schema(comida_a_agregar)
+        return Meal(**meal_schema(comida_a_agregar))
     
     raise HTTPException(status_code=400, detail="No se pudo agregar el registro")
- #   ----------------------- Antigua función usando colecciones
-    # try:
-    #     object_id = ObjectId(patient_id)
-    # except bson_errors.InvalidId:
-    #     raise HTTPException(status_code=400, detail="Formato de patient_id inválido")
-
-    # patient = patients_collection.find_one({"_id": object_id})
-    # if not patient:
-    #     raise HTTPException(status_code=404, detail="Paciente no encontrado")
-
-    # meal_dict = meal.dict()
-    # meal_dict["id"] = ObjectId()  # ✅ Este campo lo exige tu esquema de MongoDB
-
-
 
 @router.get("/{patient_id}/meals", summary="Obtener registros de comidas de un paciente", response_description="Lista de registros de comidas")
 def get_meals(patient_id: str):
@@ -293,29 +255,30 @@ def update_meal(patient_id: str, updated_meal: Meal):
 
     raise HTTPException(status_code=404, detail="No se encontró el registro a actualizar")
 
-
-@router.post("/{patient_id}/hygiene_logs", summary="Registrar evento de higiene para un paciente", response_description="Evento de higiene registrado")
-def add_hygiene_log(patient_id: str, hygiene_log: HygieneLog):
+#POST FUNCIONANDO
+@router.post("/{patient_id}/hygiene_logs",response_model=HygieneLog, summary="Registrar evento de higiene para un paciente", response_description="Evento de higiene registrado")
+async def add_hygiene_log(patient_id: str, hygiene_log: HygieneLog):
     try:
         object_id = ObjectId(patient_id)
     except bson_errors.InvalidId:
         raise HTTPException(status_code=400, detail="Formato de patient_id inválido")
 
-    patient = patients_collection.find_one({"_id": object_id})
+    patient = db_client.conectacare.patient.find_one({"_id": object_id})
     if not patient:
         raise HTTPException(status_code=404, detail="Paciente no encontrado")
 
     hygiene_log_dict = hygiene_log.dict()
+    hygiene_log_dict["id"] = ObjectId()
 
-    result = patients_collection.update_one(
+    result = db_client.conectacare.patient.update_one(
         {"_id": object_id},
         {"$push": {"hygiene_logs": hygiene_log_dict}}
     )
 
     if result.modified_count == 1:
-        return {"message": "Registro de evento de higiene agregado exitosamente"}
+        return HygieneLog(**hygiene_log_schema(hygiene_log_dict))
 
-    raise HTTPException(status_code=500, detail="No se pudo agregar el registro")
+    raise HTTPException(status_code=400, detail="No se pudo agregar el registro")
 
 
 @router.get("/{patient_id}/hygiene_logs", summary="Obtener registros de higiene de un paciente", response_description="Lista de registros de higiene")

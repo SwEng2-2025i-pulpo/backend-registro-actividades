@@ -13,7 +13,7 @@ class MedicationLog(BaseModel):
 
 
 class Meal(BaseModel):
-    id: str | None = None # puede ser opcional porque mongo asigna ids automaticos
+    id: Optional[str] = None # puede ser opcional porque mongo asigna ids automaticos
     datetime: datetime
     meal_type: str
     description: str
@@ -22,6 +22,7 @@ class Meal(BaseModel):
 
 
 class HygieneLog(BaseModel):
+    id: Optional[str] = None # puede ser opcional porque mongo asigna ids automaticos
     datetime: datetime
     type: str
     condition: str
