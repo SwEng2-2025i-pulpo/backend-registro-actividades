@@ -40,10 +40,10 @@ class HygieneLog(BaseModel):
 #     heart_rate: int
 #     observations: Optional[str] = ""
 
-class WeightByMonth(BaseModel):
-    id: Optional[str] = None
-    month: str
-    value: int
+# class WeightByMonth(BaseModel):
+#     id: Optional[str] = None
+#     month: str
+#     value: int
 
 # Sub-model for blood pressure
 class BloodPressure(BaseModel):
@@ -54,7 +54,7 @@ class BloodPressure(BaseModel):
 class VitalSigns(BaseModel):
     id: Optional[str] = None
     datetime: datetime
-    weight_by_month: List[WeightByMonth]
+    daily_weight: int
     blood_pressure: BloodPressure
     heart_rate: int
     observations: str
@@ -75,7 +75,7 @@ class MedicalHistoryEntry(BaseModel):
     notes: Optional[str] = ""
 
 
-class WeightEntry(BaseModel):
-    id: Optional[str] = None  # <-- nuevo campo agregado por Daniel opcional porque mongo lo pone
-    month: str # formato YYYY-MM
-    value: int # en kg
+# class WeightEntry(BaseModel):
+#     id: Optional[str] = None  # <-- nuevo campo agregado por Daniel opcional porque mongo lo pone
+#     month: str # formato YYYY-MM
+#     value: int # en kg

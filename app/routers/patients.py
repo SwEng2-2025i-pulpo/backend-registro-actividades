@@ -11,9 +11,6 @@ from datetime import datetime, date
 
 router = APIRouter(prefix="/patients", tags=["patients"])
 
-# # Definir la colección de pacientes
-# patients_collection = db_client["conectacare"]["patient"]
-
 #POST PACIENTE FUNCIONANDO
 @router.post("/", response_model = Patient, summary="Crear un nuevo paciente", response_description="Paciente creado")
 
@@ -57,12 +54,12 @@ def search_patientsid(field: str, key): # función para obtener un patient
     except:
         return {"error": "no se ha encontrado el usuario getbyid"}
 
-#GET PATIENTS FUNCIONANDO
-@router.get("/", summary="Obtener lista de pacientes", response_description="Lista de pacientes")
-async def get_patients():
+# #GET PATIENTS FUNCIONANDO función en el otro backend 3002
+# @router.get("/", summary="Obtener lista de pacientes", response_description="Lista de pacientes")
+# async def get_patients():
 
-    patients = patient_schema_starting_list(db_client.conectacare.patient.find())
-    return patients
+#     patients = patient_schema_starting_list(db_client.conectacare.patient.find())
+#     return patients
 
 #POST FUNCIONANDO
 @router.post("/{patient_id}/medication_logs", response_model=MedicationLog, summary="Registrar medicación para un paciente", response_description="Medicación registrada")
@@ -97,7 +94,7 @@ async def add_medication_log(patient_id: str, medication_log: MedicationLog):
 
     raise HTTPException(status_code=400, detail="No se pudo agregar el registro")
 
-#FUNCIONANDO
+#GET FUNCIONANDO
 @router.get("/{patient_id}/medication_logs", summary="Obtener registros de medicación de un paciente", response_description="Lista de registros de medicación")
 async def get_medication_logs(patient_id: str):
 
@@ -165,7 +162,7 @@ async def add_meal(patient_id: str, meal: Meal):
     
     raise HTTPException(status_code=400, detail="No se pudo agregar el registro")
 
-#FUNCIONANDO
+#GET FUNCIONANDO
 @router.get("/{patient_id}/meals", summary="Obtener registros de comidas de un paciente", response_description="Lista de registros de comidas")
 async def get_meals(patient_id: str):
     try:
@@ -230,7 +227,7 @@ async def add_hygiene_log(patient_id: str, hygiene_log: HygieneLog):
 
     raise HTTPException(status_code=400, detail="No se pudo agregar el registro")
 
-#FUNCIONANDO
+#GET FUNCIONANDO
 @router.get("/{patient_id}/hygiene_logs", summary="Obtener registros de higiene de un paciente", response_description="Lista de registros de higiene")
 async def get_hygiene_logs(patient_id: str):
     try:
@@ -285,8 +282,8 @@ async def add_vital_signs(patient_id: str, vital_signs: VitalSigns):
     vital_signs_dict = vital_signs.dict()
     vital_signs_dict["id"] = ObjectId()
 
-    for item in vital_signs_dict["weight_by_month"]:
-        item["id"] = ObjectId()
+    # for item in vital_signs_dict["weight_by_month"]:
+    #     item["id"] = ObjectId()
 
     result = db_client.conectacare.patient.update_one(
         {"_id": object_id},
@@ -298,7 +295,7 @@ async def add_vital_signs(patient_id: str, vital_signs: VitalSigns):
 
     raise HTTPException(status_code=400, detail="No se pudo agregar el registro")
 
-#FUNCIONANDO
+#GET FUNCIONANDO
 @router.get("/{patient_id}/vital_signs", summary="Obtener registros de signos vitales de un paciente", response_description="Lista de registros de signos vitales")
 async def get_vital_signs(patient_id: str):
     try:
@@ -364,7 +361,7 @@ async def add_symptom(patient_id: str, symptom: Symptom):
 
     raise HTTPException(status_code=400, detail="No se pudo agregar el registro")
 
-#FUNCIONANDO
+#GET FUNCIONANDO
 @router.get("/{patient_id}/symptoms", summary="Obtener registros de síntomas de un paciente", response_description="Lista de registros de síntomas")
 async def get_symptoms(patient_id: str):
     try:
@@ -380,7 +377,7 @@ async def get_symptoms(patient_id: str):
 
     return symptoms_schema(symptoms)
 
-#FUNCIONANDO
+#PUT FUNCIONANDO
 @router.put("/{patient_id}/symptoms/{symptom_id}", response_model= Symptom, summary="Actualizar un registro de síntomas de un paciente", response_description="Registro de síntoma actualizado")
 async def update_symptom(patient_id: str, symptom_id: str, updated_symptom: Symptom):
 
@@ -428,7 +425,7 @@ async def add_medical_history_entry(patient_id: str, entry: MedicalHistoryEntry)
 
     raise HTTPException(status_code=400, detail="No se pudo agregar el registro")
 
-#FUNCIONANDO
+#GET FUNCIONANDO
 @router.get("/{patient_id}/medical_history", summary="Obtener historial médico de un paciente", response_description="Historial médico")
 async def get_medical_history(patient_id: str):
     try:

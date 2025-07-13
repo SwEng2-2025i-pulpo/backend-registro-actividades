@@ -21,14 +21,14 @@ def patient_schema(patient) -> dict:
         "symptoms": patient.get("symptoms", [])
     }
 
-def patient_schema_starting(patient) -> dict:
-    return {
-        "id": str(patient["_id"]),
-        "name": patient.get("name", ""),
-        "last_name": patient.get("last_name", ""),
-        "age": patient.get("age", 0),
-        "document": patient.get("document", 0)
-    }
+# def patient_schema_starting(patient) -> dict:  ESQUEMA EN EL OTRO BACKEND PORT 3002
+#     return {
+#         "id": str(patient["_id"]),
+#         "name": patient.get("name", ""),
+#         "last_name": patient.get("last_name", ""),
+#         "age": patient.get("age", 0),
+#         "document": patient.get("document", 0)
+#     }
 
-def patient_schema_starting_list(patient) -> list:
-    return [patient_schema_starting(patient) for patient in patient]
+# def patient_schema_starting_list(patient) -> list:
+#     return [patient_schema_starting(patient) for patient in patient]

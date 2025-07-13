@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 # En este archivo se hace la clase base del patient y los atributos que contiene
-from app.db.models.activity import WeightEntry, MedicalHistoryEntry, Meal, MedicationLog, HygieneLog, VitalSigns, Symptom
+from app.db.models.activity import MedicalHistoryEntry, Meal, MedicationLog, HygieneLog, VitalSigns, Symptom
 from typing import List
 from datetime import date
 from typing import Optional
@@ -12,7 +12,7 @@ class Patient(BaseModel):
     birth_date: date
     age: int
     document: int
-    weight_by_month: List[WeightEntry] = []   # ← valor por defecto
+    # weight_by_month: List[WeightEntry] = []   # ← valor por defecto CUIDADO, POSIBLE ERROR
     cholesterol: Optional[int] = None         # opcional, si no lo quieres al inicio
     glucose: Optional[int] = None
     conditions: List[str] = []
