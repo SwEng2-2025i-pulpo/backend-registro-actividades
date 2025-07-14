@@ -43,23 +43,6 @@ def hygiene_logs_schema(logs) -> list:
     return [hygiene_log_schema(log) for log in logs]
 
 
-# def vital_sign_schema(sign) -> dict:
-#     return {
-#         "id": str(sign["id"]),
-#         "datetime": sign["datetime"],
-#         "blood_pressure": sign["blood_pressure"],
-#         "heart_rate": sign["heart_rate"],
-#         "observations": sign.get("observations", "")
-#     }
-
-# Helper function for weight_by_month sub-documents
-# def weight_by_month_schema(weight_record) -> dict:
-#     return {
-#         "id": str(weight_record["id"]),
-#         "month": weight_record["month"],
-#         "value": weight_record["value"]
-#     }
-
 # Helper function for blood_pressure sub-document
 def blood_pressure_schema(bp_record) -> dict:
     return {

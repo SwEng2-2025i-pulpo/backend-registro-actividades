@@ -31,19 +31,7 @@ class HygieneLog(BaseModel):
     status: str
     assistance_level: str
     observations: Optional[str] = ""
-
-
-# class VitalSigns(BaseModel):
-#     id: Optional[str] = None # puede ser opcional porque mongo asigna ids automaticos
-#     datetime: datetime
-#     blood_pressure: Dict[str, int]  # Ej: {"systolic": 130, "diastolic": 85}
-#     heart_rate: int
-#     observations: Optional[str] = ""
-
-# class WeightByMonth(BaseModel):
-#     id: Optional[str] = None
-#     month: str
-#     value: int
+    
 
 # Sub-model for blood pressure
 class BloodPressure(BaseModel):
@@ -74,8 +62,3 @@ class MedicalHistoryEntry(BaseModel):
     description: str
     notes: Optional[str] = ""
 
-
-# class WeightEntry(BaseModel):
-#     id: Optional[str] = None  # <-- nuevo campo agregado por Daniel opcional porque mongo lo pone
-#     month: str # formato YYYY-MM
-#     value: int # en kg

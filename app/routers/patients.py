@@ -42,17 +42,23 @@ def search_duplicated(document: int):
         return Patient(**patient_schema(patient_found))
     return None
     
-#GET POR ID FUNCIONANDO
-@router.get("/{patient_id}", summary="Obtener paciente por id", response_description="Paciente por id")
-async def get_patientid(patient_id: str): #cambio función ASYNC Daniel 11 JULIO
-    return search_patientsid("_id", ObjectId(patient_id))
 
-def search_patientsid(field: str, key): # función para obtener un patient
+# #GET POR ID FUNCIONANDO
+@router.get("/patients/{patient_id}", summary="Obtener paciente por ID")
+async def get_patient_by_id(patient_id: str):
     try:
-        searcher = patient_schema(db_client.conectacare.patient.find_one({field: key}))
-        return Patient(**searcher)
-    except:
-        return {"error": "no se ha encontrado el usuario getbyid"}
+        object_id = ObjectId(patient_id)
+    except bson_errors.InvalidId:
+        raise HTTPException(status_code=400, detail="ID de paciente inválido")
+
+    patient = db_client.conectacare.patient.find_one({"_id": object_id})
+    if not patient:
+        raise HTTPException(status_code=404, detail="Paciente no encontrado")
+
+    try:
+        return patient_schema(patient)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al procesar el paciente: {str(e)}")
 
 # #GET PATIENTS FUNCIONANDO función en el otro backend 3002
 # @router.get("/", summary="Obtener lista de pacientes", response_description="Lista de pacientes")
